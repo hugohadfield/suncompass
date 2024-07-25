@@ -11,7 +11,7 @@ import numpy as np
 from data_loading import RegressionTaskData
 
 
-def calculate_angles_between_sun_vectors(sun_f_a, sun_l_a, sun_f_b, sun_l_b):
+def calculate_angles_between_sun_vectors(sun_f_a: float, sun_l_a: float, sun_f_b: float, sun_l_b: float) -> float:
     """
     This function calculates the angle between two sun vectors
     """
@@ -22,6 +22,9 @@ def calculate_angles_between_sun_vectors(sun_f_a, sun_l_a, sun_f_b, sun_l_b):
 
 
 class ResNetRegression(nn.Module):
+    """
+    This class defines a regression model based on a pre-trained ResNet model.
+    """
     def __init__(self, output_size: int = 3, input_size: Tuple[int, int] = (224, 224), fine_tune: bool = True):
         super(ResNetRegression, self).__init__()
         # Load a pre-trained ResNet model
@@ -132,7 +135,6 @@ def train_network(device, n_epochs: int = 10, image_size: Tuple[int, int] = (128
             if (i + 1) % 10 == 0:
                 print(f'Epoch [{epoch + 1}/{n_epochs}], Step [{i + 1}/{len(regression_task.trainloader)}], Loss: {loss.item():.4f} Angle Error: {angle_error:.4f} degrees')
     writer.close()
-
     return model
 
 
