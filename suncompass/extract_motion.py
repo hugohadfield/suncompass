@@ -71,7 +71,7 @@ def calculate_headings(latitudes_deg, longitudes_deg, starting_orientation=None)
     return headings_rads_anticlockwise_from_east, est_starting_orientation
 
 
-def extract_driving(data: pd.DataFrame) -> pd.DataFrame:
+def extract_motion(data: pd.DataFrame) -> pd.DataFrame:
     """
     Extracts the speed, global heading and curvature from the given data.
     """
