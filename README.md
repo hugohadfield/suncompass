@@ -100,8 +100,4 @@ python run_model_on_images.py --model_name 3_224_224_resnet.pth --image_dir /pat
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
-Feel free to customize the above sections to better fit your specific project needs.
+This project is licensed under the MIT License - see the [licence.txt](licence.txt) file for details.
