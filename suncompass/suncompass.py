@@ -2,6 +2,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import numpy as np
 
 from .pretrained_resnet import ResNetRegression
 
@@ -31,6 +32,7 @@ class SunCompass:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f'SunCompass:  model using device: {device}')
         model.to(device)
+        self.device = device
         self._model = model
 
     def set_eval(self, dropout: bool = True):
@@ -61,13 +63,20 @@ class SunCompass:
                 mod.eval()
         self.model.apply(disable_dropout)
 
-    def predict(self, image):
+    def predict(self, image: np.ndarray):
         """
         Predict the direction of the sun from an image.
         """
         if self.model is None:
             self.load_model()
-        return self.model(image)
+        image_transformed = self.apply_transforms(image)
+        outputs = self.model(image_transformed.to(self.device))
+        outputs_np = outputs.detach().cpu().numpy()
+        return outputs_np
+    
+    def apply_transforms(self, image: np.ndarray):
+        image_torch = torch.from_numpy(image).float().permute(2, 0, 1).unsqueeze(0)
+        return image_torch
     
     def __call__(self, image):
         return self.predict(image)
