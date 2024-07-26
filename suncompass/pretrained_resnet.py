@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import numpy as np
 
-from data_loading import RegressionTaskData
+from .data_loading import RegressionTaskData
 
 
 def calculate_angles_between_sun_vectors(sun_f_a: float, sun_l_a: float, sun_f_b: float, sun_l_b: float) -> float:

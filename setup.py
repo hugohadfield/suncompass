@@ -9,20 +9,20 @@ setup(
     author='Hugo Hadfield',
     author_email='hadfield.hugo@gmail.com',
     url='https://github.com/hugohadfield/suncompass',
-    package_data={'': ['suncompass/3_224_224_resnet_baseline_5_all.pth']},
+    package_data={'': ['3_224_224_resnet_baseline_5_all.pth']},
     include_package_data=True,
     packages=find_packages(),
     install_requires=[
-        'torch>=1.7.0',
-        'torchvision>=0.8.0',
-        'pandas>=1.1.0',
-        'numpy>=1.18.0',
-        'matplotlib>=3.2.0',
-        'tqdm>=4.48.0',
-        'click>=7.1.0',
-        'Pillow>=7.2.0',
-        'tensorboard>=2.3.0',
-        'suncalc>=0.2.0'
+        'torch',
+        'torchvision',
+        'pandas',
+        'numpy',
+        'matplotlib',
+        'tqdm',
+        'click',
+        'Pillow',
+        'tensorboard',
+        'suncalc'
     ],
     entry_points={
         'console_scripts': [
