@@ -1,6 +1,7 @@
 ## Suncompass
 
 This repository contains code for estimating the direction of the sun from a single outdoor image.
+![Suncompass](Figure_1.png)
 
 ## Repository Contents
 
