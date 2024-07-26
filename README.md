@@ -12,6 +12,8 @@ Applications:
 - You can stabilise SLAM algorithms by adding an absolute yaw reference
 - If you know the time, you know which way the sun is relative to you, and you have a reasonable estimate of where in the world you are then you can tell global heading
 
+### What happens when the sun isn't shining?
+The algorithm doesn't work 🤷‍♂️
 
 ## Repository Contents
 
