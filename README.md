@@ -7,7 +7,8 @@ This repository contains code for estimating the direction of the sun from a sin
 
 1. **pretrained_resnet.py**: Defines a regression model based on a pre-trained ResNet model and includes functions for training and loading the model.
 2. **3_224_224_resnet.pth**: A pre-trained ResNet model for estimating the direction of the sun from a single outdoor image.
-3. **run_model_on_images.py**: Runs the trained ResNet model on a set of images and saves the results.
+3. **suncompass.py**: Class for interacting with the pre-trained ResNet model.
+4. **demo.py**: Demonstrates how to use the pre-trained ResNet model to estimate the direction of the sun from a single outdoor image.
 
 ## Requirements
 
@@ -27,13 +28,13 @@ This repository contains code for estimating the direction of the sun from a sin
 
 1. Clone the repository:
     ```sh
-    git clone https://github.com/yourusername/sun-vector-motion-analysis.git
-    cd sun-vector-motion-analysis
+    git clone https://github.com/hugohadfield/suncompass.git
+    cd suncompass
     ```
 
-2. Install the required packages:
+2. Install the package:
     ```sh
-    pip install -r requirements.txt
+    pip install .
     ```
 
 ## Usage
