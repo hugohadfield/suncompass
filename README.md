@@ -10,6 +10,48 @@ This repository contains code for estimating the direction of the sun from a sin
 3. **suncompass.py**: Class for interacting with the pre-trained ResNet model.
 4. **demo.py**: Demonstrates how to use the pre-trained ResNet model to estimate the direction of the sun from a single outdoor image.
 
+## Installation
+
+### From pypi
+```sh
+pip install suncompass
+```
+
+### Manual installation
+
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/hugohadfield/suncompass.git
+    cd suncompass
+    ```
+
+2. Install the package:
+    ```sh
+    pip install .
+    ```
+
+## Example usage
+
+```python
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
+from suncompass import SunCompass
+
+image_path = "croatia.jpg"
+suncompass = SunCompass()
+suncompass.set_eval(dropout=False)
+
+image = cv2.imread(image_path)
+img_with_suncompass, theta_rad = suncompass.predict_and_draw(image)
+plt.figure()
+plt.imshow(cv2.cvtColor(img_with_suncompass, cv2.COLOR_BGR2RGB))
+plt.title(f"Sun direction: {np.degrees(theta_rad):.1f} degrees")
+plt.show()
+```
+
+
 ## Requirements
 
 - Python 3.7+
@@ -23,19 +65,6 @@ This repository contains code for estimating the direction of the sun from a sin
 - PIL
 - tensorboard
 - suncalc
-
-## Installation
-
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/hugohadfield/suncompass.git
-    cd suncompass
-    ```
-
-2. Install the package:
-    ```sh
-    pip install .
-    ```
 
 ## Usage
 
