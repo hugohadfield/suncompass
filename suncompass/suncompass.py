@@ -3,8 +3,11 @@ from pathlib import Path
 import torch
 import torch.nn as nn
 import numpy as np
+from PIL import Image
 
+from .draw_arrow import draw_all_on_image_fl
 from .pretrained_resnet import ResNetRegression
+from .data_loading import get_transforms, DEFAULT_CENTRE_CROP_SIZE
 
 
 class SunCompass:
@@ -14,12 +17,19 @@ class SunCompass:
     """
     def __init__(self):
         self._model = None
+        self._transforms = None
 
     @property
     def model(self):
         if self._model is None:
             self.load_model()
         return self._model
+    
+    @property
+    def transforms(self):
+        if self._transforms is None:
+            _, self._transforms = get_transforms(False, DEFAULT_CENTRE_CROP_SIZE, 224)
+        return self._transforms
 
     def load_model(self):
         """
@@ -35,7 +45,7 @@ class SunCompass:
         self.device = device
         self._model = model
 
-    def set_eval(self, dropout: bool = True):
+    def set_eval(self, dropout: bool = False):
         """
         Set the model to evaluation mode.
         """
@@ -71,11 +81,40 @@ class SunCompass:
             self.load_model()
         image_transformed = self.apply_transforms(image)
         outputs = self.model(image_transformed.to(self.device))
-        outputs_np = outputs.detach().cpu().numpy()
+        outputs_np = outputs.detach().cpu().numpy().flatten()
         return outputs_np
     
+    def scan_predict(self, image: np.ndarray):
+        """
+        Predict the direction of the sun from an image.
+        Scan over the image left to right and top to bottom.
+        """
+        sub_images = []
+        for i in range(0, image.shape[1]-DEFAULT_CENTRE_CROP_SIZE, 20):
+            for j in range(0, image.shape[0]-DEFAULT_CENTRE_CROP_SIZE, 20):
+                sub_image = image[j:j+DEFAULT_CENTRE_CROP_SIZE, i:i+DEFAULT_CENTRE_CROP_SIZE]
+                sub_images.append(sub_image)
+        predictions = []
+        for sub_image in sub_images:
+            prediction = self.predict(sub_image)
+            predictions.append(prediction)
+        preds = np.array(predictions)
+
+        ## Uncomment to show the sub images
+        # import matplotlib.pyplot as plt
+        # for i in range(0, len(sub_images)):
+        #     plt.figure()
+        #     plt.imshow(sub_images[i])
+        #     plt.title(f"Prediction: {preds[i]}")
+        #     plt.show()
+
+        return np.median(preds, axis=0)
+    
     def apply_transforms(self, image: np.ndarray):
-        image_torch = torch.from_numpy(image).float().permute(2, 0, 1).unsqueeze(0)
+        # first make it a PIL image
+        image_pil = Image.fromarray(image)
+        image_torch = self.transforms(image_pil)
+        image_torch = image_torch.unsqueeze(0)
         return image_torch
     
     def __call__(self, image):
@@ -87,3 +126,28 @@ class SunCompass:
     def __str__(self):
         return repr(self)
     
+    def predict_and_draw(self, image: np.ndarray):
+        """
+        Predict the direction of the sun from an image and draw the sun compass on the image.
+        """
+        w = image.shape[1]
+        h = image.shape[0]
+        K = np.array(
+            [
+                [w, 0.0, w//2],
+                [0.0, w, h//2],
+                [0.0, 0.0, 1.0]
+            ]
+        )
+        res = self.scan_predict(image)
+        f_m = res[0]
+        l_m = res[1]
+        theta_rad = np.arctan2(l_m, f_m)
+        img_with_suncompass = draw_all_on_image_fl(image, K, f_m, l_m)
+        return img_with_suncompass, theta_rad
+    
+    def get_input_image(self, image: np.ndarray):
+        """
+        Get the input image to the model.
+        """
+        return self.apply_transforms(image).cpu().squeeze().permute(1, 2, 0).numpy()

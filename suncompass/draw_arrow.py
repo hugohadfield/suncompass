@@ -124,8 +124,9 @@ def draw_arrow_in_image(img, K, arrow_forward_m=5.0, theta_rad=0.0, camera_heigh
         start_point = tuple(arrow_start_image.astype(int))
         end_point = tuple(arrow_end_image.astype(int))
 
-        if all(0 <= p < img_shape[1] for p in start_point) and all(0 <= p < img_shape[0] for p in end_point):
-            cv2.arrowedLine(img, start_point, end_point, color, 2)
+        if (start_point[1] < img_shape[0] and end_point[1] < img_shape[0] and start_point[0] < img_shape[1] and end_point[0] < img_shape[1]) \
+            and (start_point[1] >= 0 and end_point[1] >= 0 and start_point[0] >= 0 and end_point[0] >= 0):
+                cv2.arrowedLine(img, start_point, end_point, color, 2)
         else:
             print(f'Arrow points are out of image bounds. Start: {start_point}, End: {end_point}')
     else:
