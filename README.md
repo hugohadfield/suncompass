@@ -1,7 +1,17 @@
-## Suncompass
+# Suncompass
 
 This repository contains code for estimating the direction of the sun from a single outdoor image.
 ![Suncompass](Figure_1.png)
+
+## Why?
+
+In many areas of the world the sun shines a lot and humans have used it as a navigational aid for thousands of years. So maybe it would be fun to imbue our robotic creations with this ability too.
+
+Applications:
+- You can estimate the yaw angle between multiple cameras on the same rig even if they don't have overlap
+- You can stabilise SLAM algorithms by adding an absolute yaw reference
+- If you know the time, you know which way the sun is relative to you, and you have a reasonable estimate of where in the world you are then you can tell global heading
+
 
 ## Repository Contents
 
