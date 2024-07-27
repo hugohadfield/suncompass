@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+ @license
+ Copyright 2019 Google LLC. All Rights Reserved.
+ SPDX-License-Identifier: Apache-2.0
+-->
+<!-- [START maps_event_click_latlng] -->
+<html>
+  <head>
+    <title>Manual labeller</title>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
+
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+    <script type="module" src="./index.js"></script>
+  </head>
+  <body>
+    <div id="left_panel">
+      <div id="image_frame">
+        <!-- 
+          In the image frame there is an image that will be labelled.
+          The displayed image corresponds to the frame number selected from the information frame table.
+          There is a button to go to the next image, it links to the nextImage function in index.js.
+         -->
+         <button id="skip_button">Skip 1 Image</button>
+         <button id="skip_30_button">Skip 30 Images</button>
+        <button id="next_button">Next Image</button>
+        <img src="images/0.jpg" width="100%" id="camera_image"/>
+      </div>
+      <div id="information_frame">
+        <!-- 
+          In the information frame there is a table with 3 columns, frame number, latitude and longitude.
+          The table is initially empty and will be populated with the information of lat and lng of the clicked points on the map.
+          There is a button to save the information in a csv file.
+         -->
+         <div>
+            <p>Frame number: <span id="frame_number"></span> Latitude: <span id="lat"></span> 
+              Longitude: <span id="lng"></span></p>
+          </div>
+        <table id="labelling_table">
+          <tr>
+            <th>Image</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+          </tr>
+        </table>
+        <button id="download_button">Download as CSV</button>
+      </div>
+    </div>
+      <div id="map"></div>
+
+    <!-- prettier-ignore -->
+    <script>(g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})
+        ({key: "<your_key_here>", v: "weekly"}
+    );</script>
+  </body>
+</html>
+<!-- [END maps_event_click_latlng] -->
