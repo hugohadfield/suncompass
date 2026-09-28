@@ -133,7 +133,7 @@ jobs:
 
                   # comma2k19 README: quaternion rotates ECEF -> local camera
                   # where camera axes are [forward, right, down].
-                  R_cam_from_ecef = quat2rot(quats[idx])
+                  R_cam_from_ecef = quat2rot(quats[idx]).T
                   sun_frd = R_cam_from_ecef @ sun_ecef
 
                   gt_f = float(sun_frd[0])
