@@ -1,0 +1,48 @@
+name: Temporary SunCompass 360 smoke test
+
+on:
+  push:
+    branches:
+      - experiment/metropolis-360-eval
+  pull_request:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install SunCompass
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+
+      - name: Download public outdoor equirectangular panorama
+        run: |
+          curl -L --fail --retry 3             https://raw.githubusercontent.com/mpetroff/pannellum.org/master/static/images/alma.jpg             -o /tmp/alma.jpg
+          python - <<'PY'
+          from PIL import Image
+          im = Image.open("/tmp/alma.jpg")
+          print("Panorama size:", im.size)
+          PY
+
+      - name: Run 360 evaluation
+        run: |
+          python experiments/metropolis_360/evaluate.py             --panorama /tmp/alma.jpg             --yaw-step-deg 30             --output-dir /tmp/suncompass-360             --save-views
+
+          echo "=== aggregate.json ==="
+          cat /tmp/suncompass-360/aggregate.json
+          echo "=== summary.csv ==="
+          cat /tmp/suncompass-360/summary.csv
+          echo "=== predictions.csv ==="
+          cat /tmp/suncompass-360/predictions.csv
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: suncompass-360-smoke-test
+          path: /tmp/suncompass-360
