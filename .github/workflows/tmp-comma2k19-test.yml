@@ -1,4 +1,4 @@
-name: Temporary comma2k19 SunCompass test
+name: Temporary comma2k19 preprocessing comparison
 
 on:
   push:
@@ -11,7 +11,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -24,23 +23,18 @@ jobs:
 
       - name: Fetch comma2k19 public example segment
         run: |
-          mkdir -p /tmp/comma
-          base='https://raw.githubusercontent.com/commaai/comma2k19/master/Example_1/b0c9d2329ad1606b%7C2018-08-02--08-34-47/40'
-          curl -L --fail "$base/preview.png" -o /tmp/comma/preview.png
-          curl -L --fail "$base/video.hevc" -o /tmp/comma/video.hevc
           mkdir -p /tmp/comma/global_pose
+          base='https://raw.githubusercontent.com/commaai/comma2k19/master/Example_1/b0c9d2329ad1606b%7C2018-08-02--08-34-47/40'
+          curl -L --fail "$base/video.hevc" -o /tmp/comma/video.hevc
           for f in frame_gps_times frame_orientations frame_positions frame_times frame_velocities; do
             curl -L --fail "$base/global_pose/$f" -o "/tmp/comma/global_pose/$f"
           done
-          ls -lh /tmp/comma /tmp/comma/global_pose
 
-      - name: Run current SunCompass against fused camera-pose ground truth
+      - name: Compare current, crop-max and letterbox
         run: |
           mkdir -p /tmp/comma_result/frames
           python - <<'PY'
-          import csv
-          import json
-          import math
+          import csv, json, math
           from datetime import datetime, timedelta, timezone
           from pathlib import Path
 
@@ -54,68 +48,64 @@ jobs:
 
           root = Path("/tmp/comma")
           gp = root / "global_pose"
-
           gps_times = np.load(gp / "frame_gps_times")
           quats = np.load(gp / "frame_orientations")
           positions = np.load(gp / "frame_positions")
           velocities = np.load(gp / "frame_velocities")
-          print("shapes", gps_times.shape, quats.shape, positions.shape, velocities.shape)
-          print("gps first", gps_times[0], "quat first", quats[0], "pos first", positions[0])
 
           def quat2rot(q):
               q0, q1, q2, q3 = map(float, q)
               return np.array([
-                  [q0*q0 + q1*q1 - q2*q2 - q3*q3,
-                   2*(q1*q2 - q0*q3),
-                   2*(q0*q2 + q1*q3)],
-                  [2*(q1*q2 + q0*q3),
-                   q0*q0 - q1*q1 + q2*q2 - q3*q3,
-                   2*(q2*q3 - q0*q1)],
-                  [2*(q1*q3 - q0*q2),
-                   2*(q0*q1 + q2*q3),
-                   q0*q0 - q1*q1 - q2*q2 + q3*q3],
+                  [q0*q0 + q1*q1 - q2*q2 - q3*q3, 2*(q1*q2-q0*q3), 2*(q0*q2+q1*q3)],
+                  [2*(q1*q2+q0*q3), q0*q0-q1*q1+q2*q2-q3*q3, 2*(q2*q3-q0*q1)],
+                  [2*(q1*q3-q0*q2), 2*(q0*q1+q2*q3), q0*q0-q1*q1-q2*q2+q3*q3],
               ], dtype=np.float64)
 
           ecef_to_geodetic = Transformer.from_crs("EPSG:4978", "EPSG:4979", always_xy=True)
           gps_epoch = datetime(1980, 1, 6, tzinfo=timezone.utc)
 
           def gps_to_utc(gps):
-              week = int(gps[0])
-              tow = float(gps[1])
-              # GPS-UTC was 18 s throughout 2018.
-              return gps_epoch + timedelta(weeks=week, seconds=tow - 18.0)
+              return gps_epoch + timedelta(weeks=int(gps[0]), seconds=float(gps[1]) - 18.0)
 
-          def enu_to_ecef(v_enu, lat_deg, lon_deg):
-              lat = math.radians(lat_deg)
-              lon = math.radians(lon_deg)
+          def enu_to_ecef(v, lat_deg, lon_deg):
+              lat, lon = math.radians(lat_deg), math.radians(lon_deg)
               east = np.array([-math.sin(lon), math.cos(lon), 0.0])
-              north = np.array([
-                  -math.sin(lat)*math.cos(lon),
-                  -math.sin(lat)*math.sin(lon),
-                  math.cos(lat),
-              ])
-              up = np.array([
-                  math.cos(lat)*math.cos(lon),
-                  math.cos(lat)*math.sin(lon),
-                  math.sin(lat),
-              ])
-              return v_enu[0]*east + v_enu[1]*north + v_enu[2]*up
+              north = np.array([-math.sin(lat)*math.cos(lon), -math.sin(lat)*math.sin(lon), math.cos(lat)])
+              up = np.array([math.cos(lat)*math.cos(lon), math.cos(lat)*math.sin(lon), math.sin(lat)])
+              return v[0]*east + v[1]*north + v[2]*up
 
           def wrap_deg(x):
               return (x + 180.0) % 360.0 - 180.0
 
+          def crop_max(rgb):
+              h, w = rgb.shape[:2]
+              s = min(h, w)
+              y0, x0 = (h-s)//2, (w-s)//2
+              crop = rgb[y0:y0+s, x0:x0+s]
+              return cv2.resize(crop, (300, 300), interpolation=cv2.INTER_AREA)
+
+          def letterbox(rgb):
+              h, w = rgb.shape[:2]
+              scale = min(300.0/w, 300.0/h)
+              nw, nh = max(1, round(w*scale)), max(1, round(h*scale))
+              resized = cv2.resize(rgb, (nw, nh), interpolation=cv2.INTER_AREA)
+              out = np.zeros((300, 300, 3), dtype=np.uint8)
+              x0, y0 = (300-nw)//2, (300-nh)//2
+              out[y0:y0+nh, x0:x0+nw] = resized
+              return out
+
           cap = cv2.VideoCapture(str(root / "video.hevc"))
           if not cap.isOpened():
-              raise RuntimeError("Could not open comma2k19 HEVC video")
+              raise RuntimeError("Could not open video")
 
-          frame_count = min(len(gps_times), len(quats), len(positions))
-          wanted = sorted(set(np.linspace(0, frame_count - 1, 16).round().astype(int).tolist()))
+          n = min(len(gps_times), len(quats), len(positions))
+          wanted = sorted(set(np.linspace(0, n-1, 16).round().astype(int).tolist()))
           wanted_set = set(wanted)
 
           compass = SunCompass()
           compass.set_eval(dropout=False)
-
           rows = []
+
           idx = 0
           while True:
               ok, bgr = cap.read()
@@ -123,94 +113,88 @@ jobs:
                   break
               if idx in wanted_set:
                   rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-
                   x, y, z = map(float, positions[idx])
                   lon, lat, alt = ecef_to_geodetic.transform(x, y, z)
                   utc = gps_to_utc(gps_times[idx])
-
                   sun_enu = calculate_sun_vector_ENU(utc, lat, lon)
                   sun_ecef = enu_to_ecef(sun_enu, lat, lon)
 
-                  # comma2k19 README: quaternion rotates ECEF -> local camera
-                  # where camera axes are [forward, right, down].
+                  # Stored Hamilton quat + comma's matrix convention requires
+                  # transpose here. Velocity is used below as an independent check.
                   R_cam_from_ecef = quat2rot(quats[idx]).T
                   sun_frd = R_cam_from_ecef @ sun_ecef
-
-                  gt_f = float(sun_frd[0])
-                  gt_l = float(-sun_frd[1])
-                  gt_u = float(-sun_frd[2])
+                  gt_f, gt_l, gt_u = float(sun_frd[0]), float(-sun_frd[1]), float(-sun_frd[2])
                   gt_az = math.degrees(math.atan2(gt_l, gt_f))
-
-                  pred = compass.predict(rgb)
-                  pred_f, pred_l = map(float, pred[:2])
-                  pred_az = math.degrees(math.atan2(pred_l, pred_f))
-                  err = wrap_deg(pred_az - gt_az)
-
-                  # Independent sanity check: camera forward axis vs ECEF velocity.
-                  # Since R maps ECEF vectors to camera FRD, a forward-moving car
-                  # should have positive camera-x velocity and small lateral velocity.
                   vel_cam = R_cam_from_ecef @ np.asarray(velocities[idx], dtype=np.float64)
 
-                  row = {
-                      "frame": idx,
-                      "utc": utc.isoformat(),
-                      "latitude_deg": float(lat),
-                      "longitude_deg": float(lon),
-                      "altitude_m": float(alt),
-                      "camera_velocity_forward_mps": float(vel_cam[0]),
-                      "camera_velocity_right_mps": float(vel_cam[1]),
-                      "camera_velocity_down_mps": float(vel_cam[2]),
-                      "true_sun_f": gt_f,
-                      "true_sun_l": gt_l,
-                      "true_sun_u": gt_u,
-                      "true_relative_azimuth_deg": gt_az,
-                      "pred_sun_f": pred_f,
-                      "pred_sun_l": pred_l,
-                      "pred_magnitude": math.hypot(pred_f, pred_l),
-                      "pred_relative_azimuth_deg": pred_az,
-                      "signed_azimuth_error_deg": err,
-                      "absolute_azimuth_error_deg": abs(err),
+                  variants = {
+                      "current_center300": rgb,
+                      "single_crop_max": crop_max(rgb),
+                      "letterbox_300": letterbox(rgb),
                   }
-                  rows.append(row)
-                  Image.fromarray(rgb).save(
-                      f"/tmp/comma_result/frames/frame_{idx:04d}.jpg", quality=92
-                  )
-                  print(json.dumps(row))
+                  for method, inp in variants.items():
+                      pred = compass.predict(inp)
+                      pf, pl = map(float, pred[:2])
+                      paz = math.degrees(math.atan2(pl, pf))
+                      err = wrap_deg(paz - gt_az)
+                      rows.append({
+                          "method": method,
+                          "frame": idx,
+                          "utc": utc.isoformat(),
+                          "latitude_deg": float(lat),
+                          "longitude_deg": float(lon),
+                          "camera_velocity_forward_mps": float(vel_cam[0]),
+                          "camera_velocity_right_mps": float(vel_cam[1]),
+                          "camera_velocity_down_mps": float(vel_cam[2]),
+                          "true_sun_f": gt_f,
+                          "true_sun_l": gt_l,
+                          "true_sun_u": gt_u,
+                          "true_relative_azimuth_deg": gt_az,
+                          "pred_sun_f": pf,
+                          "pred_sun_l": pl,
+                          "pred_magnitude": math.hypot(pf, pl),
+                          "pred_relative_azimuth_deg": paz,
+                          "signed_azimuth_error_deg": err,
+                          "absolute_azimuth_error_deg": abs(err),
+                      })
+
+                  Image.fromarray(rgb).save(f"/tmp/comma_result/frames/frame_{idx:04d}.jpg", quality=92)
               idx += 1
 
-          if not rows:
-              raise RuntimeError("No frames decoded")
+          summaries = {}
+          for method in ["current_center300", "single_crop_max", "letterbox_300"]:
+              rr = [r for r in rows if r["method"] == method]
+              ae = np.array([r["absolute_azimuth_error_deg"] for r in rr])
+              se = np.array([r["signed_azimuth_error_deg"] for r in rr])
+              summaries[method] = {
+                  "n": len(rr),
+                  "mae_deg": float(ae.mean()),
+                  "median_ae_deg": float(np.median(ae)),
+                  "p90_ae_deg": float(np.percentile(ae, 90)),
+                  "within_10_deg": float(np.mean(ae <= 10.0)),
+                  "within_30_deg": float(np.mean(ae <= 30.0)),
+                  "mean_signed_error_deg": float(se.mean()),
+              }
 
-          abs_errors = np.array([r["absolute_azimuth_error_deg"] for r in rows])
-          signed = np.array([r["signed_azimuth_error_deg"] for r in rows])
-          summary = {
-              "num_frames": len(rows),
-              "decoded_frames": idx,
-              "sampled_frames": wanted,
-              "mean_absolute_error_deg": float(abs_errors.mean()),
-              "median_absolute_error_deg": float(np.median(abs_errors)),
-              "p90_absolute_error_deg": float(np.percentile(abs_errors, 90)),
-              "min_absolute_error_deg": float(abs_errors.min()),
-              "max_absolute_error_deg": float(abs_errors.max()),
-              "mean_signed_error_deg": float(signed.mean()),
-              "mean_forward_speed_mps": float(np.mean([r["camera_velocity_forward_mps"] for r in rows])),
-              "mean_abs_lateral_velocity_mps": float(np.mean(np.abs([r["camera_velocity_right_mps"] for r in rows]))),
+          sanity = {
+              "mean_forward_speed_mps": float(np.mean([r["camera_velocity_forward_mps"] for r in rows[::3]])),
+              "mean_abs_lateral_velocity_mps": float(np.mean(np.abs([r["camera_velocity_right_mps"] for r in rows[::3]]))),
+              "mean_true_sun_up": float(np.mean([r["true_sun_u"] for r in rows[::3]])),
           }
+          result = {"summary": summaries, "geometry_sanity": sanity, "sampled_frames": wanted}
 
           out = Path("/tmp/comma_result")
-          with (out / "results.csv").open("w", newline="") as f:
+          with (out/"results.csv").open("w", newline="") as f:
               w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-              w.writeheader()
-              w.writerows(rows)
-          with (out / "summary.json").open("w") as f:
-              json.dump(summary, f, indent=2)
-              f.write("\n")
+              w.writeheader(); w.writerows(rows)
+          with (out/"summary.json").open("w") as f:
+              json.dump(result, f, indent=2); f.write("\n")
 
-          print("SUMMARY")
-          print(json.dumps(summary, indent=2))
+          print("FINAL SUMMARY")
+          print(json.dumps(result, indent=2))
           PY
 
       - uses: actions/upload-artifact@v4
         with:
-          name: comma2k19-suncompass-ground-truth-test
+          name: comma2k19-suncompass-preprocess-comparison
           path: /tmp/comma_result
