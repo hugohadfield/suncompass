@@ -141,6 +141,58 @@ python run_model_on_images.py --model_name 3_224_224_resnet.pth --image_dir /pat
 - `run_model_on_images(model_name: Path, image_dir: Path, image_size: Tuple[int, int, int] = (1, 100, 100))`: Runs the model on the images and saves the results to a CSV file.
 - `plot_results_csv(gt_csv: Optional[str] = None)`: Plots the results from the CSV file.
 
+## Historical weather lookup
+
+SunCompass includes `suncompass.historical_weather.get_historical_weather()` for screening
+outdoor image datasets by historical weather. It uses the
+[Open-Meteo Historical Weather API](https://open-meteo.com/en/docs/historical-weather-api)
+with the ERA5 reanalysis model by default. No API key or additional Python
+package is required.
+
+From a clone where SunCompass is installed (`pip install -e .`):
+
+```bash
+python -m suncompass.historical_weather \
+  --lat 37.7255 --lon -122.4721 \
+  --time 2018-08-02T16:14:00Z
+```
+
+Or from Python:
+
+```python
+from datetime import datetime, timezone
+from suncompass.historical_weather import get_historical_weather
+
+weather = get_historical_weather(
+    37.7255, -122.4721,
+    datetime(2018, 8, 2, 16, 14, tzinfo=timezone.utc),
+)
+print(weather)
+```
+
+The response includes `timestamp_utc`, `weather_hour_utc`, the requested
+coordinates, the model grid-cell coordinates, and these hourly weather fields:
+
+- `cloud_cover` and `cloud_cover_low`: instantaneous cloud coverage (%).
+- `precipitation`: precipitation during the preceding hour (mm).
+- `direct_normal_irradiance`: mean direct normal solar irradiance during the
+  preceding hour (W/m²).
+- `sunshine_duration`: sunshine during the preceding hour (seconds).
+
+The nearest UTC hourly timestamp is selected, including across UTC midnight;
+missing weather values remain `None`. The input time **must** include a timezone.
+Weather is *reanalysis data at model-grid resolution*, not a local observation
+or proof that the sun was visible in an image. In particular, fog may vary
+substantially within a model grid cell. For a high-frame-rate driving sequence,
+reuse one hourly weather lookup across nearby frames rather than making one
+API request per frame.
+
+Run the offline unit tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [licence.txt](licence.txt) file for details.
