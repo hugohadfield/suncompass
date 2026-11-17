@@ -1,0 +1,15 @@
+# Install torch/torchvision from https://download.pytorch.org/whl/cu128 first.
+torch==2.8.0
+torchvision==0.23.0
+pandas
+numpy
+matplotlib
+tqdm
+click
+Pillow
+tensorboard
+suncalc
+opencv-python-headless
+gdown
+psutil
+pytest
