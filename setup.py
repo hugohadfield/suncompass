@@ -26,6 +26,8 @@ setup(
     ],
     entry_points={
         'console_scripts': [
+            'suncompass-amos=suncompass.amos:main',
+            'suncompass-train=suncompass.train:main',
             'add_sun_vector=add_sun_vector:main',
             'extract_motion=extract_motion:main',
             'pretrained_resnet=pretrained_resnet:main',
@@ -36,9 +38,7 @@ setup(
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.12',
     ],
-    python_requires='>=3.7',
+    python_requires='>=3.12',
 )
