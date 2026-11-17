@@ -18,7 +18,7 @@ def test_instrumented_predictor_preserves_both_upstream_methods(tmp_path):
     image[:,:,2]=np.arange(340,dtype=np.uint16)[None,:] % 256
     path=tmp_path/'rgb.png';Image.fromarray(image).save(path)
     instrumented=Predictor(weights)
-    original=SunCompass(weights_path=weights);original.set_eval(dropout=False)
+    original=SunCompass(weights_path=weights, preprocessing="legacy");original.set_eval(dropout=False)
     tensor=original.apply_transforms(image)
     assert tensor.shape==(1,3,224,224)
     for method in ('single','scan'):

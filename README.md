@@ -200,3 +200,5 @@ This project is licensed under the MIT License - see the [licence.txt](licence.t
 ## Research workflows
 
 - [WayveScenes101 evaluation](PILOT.md)
+
+- [AMOS training and preprocessing](docs/AMOS_TRAINING.md)

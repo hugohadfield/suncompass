@@ -77,7 +77,8 @@ class Predictor:
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
         torch.use_deterministic_algorithms(True)
-        self.sun = SunCompass(weights_path=weights)
+        # This historical experiment explicitly retains the 224-pixel contract.
+        self.sun = SunCompass(weights_path=weights, preprocessing="legacy")
         self.sun.set_eval(dropout=False)
         self.transform_seconds = self.model_seconds = 0
         self.crop_count = 0
