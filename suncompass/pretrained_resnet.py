@@ -29,7 +29,7 @@ class ResNetRegression(nn.Module):
         super(ResNetRegression, self).__init__()
         # Load a pre-trained ResNet model
         weights=models.ResNet18_Weights.IMAGENET1K_V1
-        self.resnet = models.resnet18(weights)
+        self.resnet = models.resnet18(weights=weights)
         
         # Freeze the layers except the last 3
         if fine_tune:
@@ -67,12 +67,16 @@ class ResNetRegression(nn.Module):
         img = self.preprocess_transform(img)
         return img
 
-    def forward(self, x):
+    def forward(self, x, preprocessed=False):
         """
         Passes the data through the ResNet model.
+        If preprocessed=True, x is assumed to be already normalized and ready for inference.
+        Otherwise, apply the standard preprocessing (resize and normalization).
         """
-        # Resize the input image
-        x = torch.stack([self.preprocess(img) for img in x])
+        if not preprocessed:
+            # Resize the input image
+            x = torch.stack([self.preprocess(img) for img in x])
+
         x = x.to(next(self.parameters()).device)  # Ensure the input is on the same device as the model parameters
         x = self.resnet(x)
 
@@ -90,7 +94,7 @@ class ResNetRegression(nn.Module):
     def load(filename: str, output_size: int = 2, input_size: Tuple[int, int] = (224, 224), fine_tune: bool = True):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = ResNetRegression(output_size=output_size, input_size=input_size, fine_tune=fine_tune)
-        model.load_state_dict(torch.load(filename, map_location=device))
+        model.load_state_dict(torch.load(filename, map_location=device, weights_only=True))
         return model
 
 

@@ -15,7 +15,8 @@ class SunCompass:
     This is the main class for the suncompass package. It loads the pretrained model and
     can be used to predict the direction of the sun from an image.
     """
-    def __init__(self):
+    def __init__(self, weights_path=None):
+        self.weights_path = weights_path
         self._model = None
         self._transforms = None
 
@@ -37,7 +38,7 @@ class SunCompass:
         """
         print("SunCompass: Loading model...")
         this_dir = Path(__file__).parent
-        model_name = f"{this_dir}/3_224_224_resnet_baseline_5_all.pth"
+        model_name = self.weights_path or f"{this_dir}/3_224_224_resnet_baseline_5_all.pth"
         model = ResNetRegression.load(model_name)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f'SunCompass:  model using device: {device}')
@@ -116,6 +117,57 @@ class SunCompass:
         image_torch = self.transforms(image_pil)
         image_torch = image_torch.unsqueeze(0)
         return image_torch
+
+    def apply_letterbox_transforms(self, image: np.ndarray):
+        """
+        Letterbox transform: fit entire RGB image into 224x224 with aspect ratio preserved,
+        using bilinear resize, integer rounded dimensions clamped 1..224, centered padding
+        with RGB (124,116,104), then convert to float32 tensor [0,1] and apply ImageNet normalization.
+        """
+        # Convert to PIL
+        pil_img = Image.fromarray(image)
+
+        # Compute target size preserving aspect ratio
+        orig_w, orig_h = pil_img.size
+        scale = min(224 / orig_w, 224 / orig_h)
+        new_w = max(1, min(224, round(orig_w * scale)))
+        new_h = max(1, min(224, round(orig_h * scale)))
+
+        # Resize with bilinear
+        resized = pil_img.resize((new_w, new_h), Image.Resampling.BILINEAR)
+
+        # Create padded canvas
+        padded = Image.new('RGB', (224, 224), (124, 116, 104))
+        paste_x = (224 - new_w) // 2
+        paste_y = (224 - new_h) // 2
+        padded.paste(resized, (paste_x, paste_y))
+
+        # Convert to tensor [0,1] and normalize
+        tensor = torch.from_numpy(np.array(padded)).float().permute(2, 0, 1) / 255.0
+
+        # Apply ImageNet normalization exactly once
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+        tensor = (tensor - mean) / std
+
+        # Add batch dimension
+        tensor = tensor.unsqueeze(0)
+        return tensor
+
+    def letterbox_predict(self, image: np.ndarray):
+        """
+        Predict using full-field-of-view letterbox inference.
+        """
+        if self.model is None:
+            self.load_model()
+
+        # Apply letterbox transforms
+        image_torch = self.apply_letterbox_transforms(image)
+
+        # Run model with preprocessed=True to skip internal transforms
+        outputs = self.model(image_torch.to(self.device), preprocessed=True)
+        outputs_np = outputs.detach().cpu().numpy().flatten()
+        return outputs_np
     
     def __call__(self, image):
         return self.predict(image)

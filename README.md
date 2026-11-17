@@ -196,3 +196,7 @@ python -m unittest discover -s tests -v
 ## License
 
 This project is licensed under the MIT License - see the [licence.txt](licence.txt) file for details.
+
+## Research workflows
+
+- [WayveScenes101 evaluation](PILOT.md)
