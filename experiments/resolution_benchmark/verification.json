@@ -1,0 +1,28 @@
+{
+  "passed": true,
+  "cases": 152,
+  "successful": 138,
+  "expected_ooms": 14,
+  "sustained": [
+    {
+      "case": "150-1080-b16-partial-fp32-soak",
+      "steps": 693,
+      "elapsed_seconds": 180.23892350215465,
+      "median_gpu_utilization_pct": 100.0,
+      "first_third_device_memory_mib": 5103.0,
+      "last_third_device_memory_mib": 5103.0,
+      "memory_growth_mib": 0.0,
+      "max_temp_c": 78.0
+    },
+    {
+      "case": "151-1080-b8-full-amp-soak",
+      "steps": 1399,
+      "elapsed_seconds": 180.07122302800417,
+      "median_gpu_utilization_pct": 99.0,
+      "first_third_device_memory_mib": 3903.0,
+      "last_third_device_memory_mib": 3903.0,
+      "memory_growth_mib": 0.0,
+      "max_temp_c": 80.0
+    }
+  ]
+}
