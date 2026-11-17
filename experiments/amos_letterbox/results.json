@@ -1,0 +1,38 @@
+{
+  "dataset": "AMOS Camera 257, 10k native training v1",
+  "input_counts": {"train": 10000, "validation": 2000, "test": 1500},
+  "unique_capture_counts": {"train": 5000, "validation": 1000, "test": 750},
+  "split_sha256": {
+    "train.csv": "3275b7aa2f3ab63cb0418abcd6b3bf7df28abbd249c5bd75d2741d61d579705c",
+    "val.csv": "707384b984023be38f4c3e615e035d8dc25c47461589cb3e8ff526e4f24320d8",
+    "test.csv": "a498f64de946d58963aae94e4ee7fe9acf6b726c90c84cb9b85e006778dc8909",
+    "manifest.csv": "4467ee77c2d693c11271dcb6954c3a9e7a60bc4db8daad1e672a466a462023e3"
+  },
+  "gpu": "NVIDIA RTX A6000",
+  "epochs": 50,
+  "batch_size": 32,
+  "optimizer": "Adam",
+  "learning_rate": 0.0001,
+  "rt_v1a": {
+    "resolution": [1024, 1024],
+    "epoch_time_sum_seconds": 14218.384,
+    "epoch_time_mean_seconds": 284.36768,
+    "first_validation_median_deg": 5.68773078918457,
+    "selected_epoch": 43,
+    "validation_median_deg": 1.2164071798324585,
+    "test_median_deg": 1.2763097286224365,
+    "test_mean_deg": 2.7903728058737083,
+    "test_p95_deg": 9.342582702636719,
+    "test_inputs_at_or_above_20_deg": 28,
+    "test_unique_captures_at_or_above_20_deg": 16,
+    "test_max_deg": 109.44992065429688
+  },
+  "rt_v1c": {
+    "resolution": [612, 612],
+    "epoch_time_sum_seconds": 5166.233,
+    "epoch_time_mean_seconds": 103.32466,
+    "selected_epoch": 47,
+    "validation_median_deg": 1.0828919410705566,
+    "test_median_deg": 1.2057733535766602
+  }
+}
