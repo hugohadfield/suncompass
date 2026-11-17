@@ -12,7 +12,7 @@ def main():
     for cmd in ('run','benchmark'):
         q=sub.add_parser(cmd)
         for name in ('data','database','weights','run-id'):q.add_argument('--'+name,required=True)
-        q.add_argument('--method',choices=['single','scan','letterbox'],required=True)
+        q.add_argument('--method',choices=['single','scan','letterbox','single-max'],required=True)
         q.add_argument('--subset',choices=['all','benchmark','recovery'],default='benchmark' if cmd=='benchmark' else 'all')
         q.add_argument('--fault-after-predictions',type=int,default=0,help='Disposable recovery tests only: SIGKILL after N uncommitted/committed prediction attempts')
     q=sub.add_parser('status');q.add_argument('--database',required=True)

@@ -168,7 +168,57 @@ class SunCompass:
         outputs = self.model(image_torch.to(self.device), preprocessed=True)
         outputs_np = outputs.detach().cpu().numpy().flatten()
         return outputs_np
-    
+
+    def apply_single_max_transforms(self, image: np.ndarray):
+        """
+        Single Crop Max transform: largest centered square crop of side min(width,height),
+        origin floor((width-side)/2), floor((height-side)/2); crop BEFORE resizing with Pillow bilinear to 224x224.
+        Convert RGB uint8 to float32 tensor [0,1] and apply ImageNet normalization exactly once.
+        """
+        # Convert to PIL
+        pil_img = Image.fromarray(image)
+
+        # Compute largest centered square crop
+        orig_w, orig_h = pil_img.size
+        side = min(orig_w, orig_h)
+        left = (orig_w - side) // 2
+        top = (orig_h - side) // 2
+        right = left + side
+        bottom = top + side
+
+        # Crop to centered square
+        cropped = pil_img.crop((left, top, right, bottom))
+
+        # Resize to 224x224 with bilinear
+        resized = cropped.resize((224, 224), Image.Resampling.BILINEAR)
+
+        # Convert to tensor [0,1] and normalize
+        tensor = torch.from_numpy(np.array(resized)).float().permute(2, 0, 1) / 255.0
+
+        # Apply ImageNet normalization exactly once
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+        tensor = (tensor - mean) / std
+
+        # Add batch dimension
+        tensor = tensor.unsqueeze(0)
+        return tensor
+
+    def single_max_predict(self, image: np.ndarray):
+        """
+        Predict using single-max inference: largest centered square crop, then resize to 224x224.
+        """
+        if self.model is None:
+            self.load_model()
+
+        # Apply single-max transforms
+        image_torch = self.apply_single_max_transforms(image)
+
+        # Run model with preprocessed=True to skip internal transforms
+        outputs = self.model(image_torch.to(self.device), preprocessed=True)
+        outputs_np = outputs.detach().cpu().numpy().flatten()
+        return outputs_np
+
     def __call__(self, image):
         return self.predict(image)
     
