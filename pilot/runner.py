@@ -95,6 +95,13 @@ class Predictor:
             self.transform_seconds += time.perf_counter() - start
             return result
         self.sun.apply_letterbox_transforms = letterbox_transform
+        original_single_max = self.sun.apply_single_max_transforms
+        def single_max_transform(image):
+            start = time.perf_counter()
+            result = original_single_max(image)
+            self.transform_seconds += time.perf_counter() - start
+            return result
+        self.sun.apply_single_max_transforms = single_max_transform
         original_forward = self.sun.model.forward
         def forward(x, *args, **kwargs):
             torch.cuda.synchronize()
@@ -122,6 +129,8 @@ class Predictor:
                 outputs = self.sun.scan_predict(image)
             elif method == 'letterbox':
                 outputs = self.sun.letterbox_predict(image)
+            elif method == 'single-max':
+                outputs = self.sun.single_max_predict(image)
             else:
                 raise ValueError(f"Unknown method: {method}")
         torch.cuda.synchronize()
@@ -183,6 +192,12 @@ def execute(args):
             decoder='Pillow RGB', center_crop=None, resize=224,
             resampling='Pillow bilinear', dimension_rounding='nearest integer clamped 1..224',
             padding_rgb=[124,116,104], padding_alignment='center extra odd pixel right/bottom',
+            normalization_mean=[.485,.456,.406], normalization_std=[.229,.224,.225],
+            internal_crop=False, dropout=False, model_passes=1)
+    if args.method == 'single-max':
+        config['preprocessing'] = dict(
+            decoder='Pillow RGB', center_crop='min(width,height)', crop_origin='floor((width-side)/2), floor((height-side)/2)',
+            odd_excess='right/bottom', resize=224, resampling='Pillow bilinear',
             normalization_mean=[.485,.456,.406], normalization_std=[.229,.224,.225],
             internal_crop=False, dropout=False, model_passes=1)
     c=connect(database)

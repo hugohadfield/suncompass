@@ -72,3 +72,7 @@ For 1920×1080 the content is 224×126 with 49 rows of padding above and below.
 The network architecture, weights and legacy single/scan paths are unchanged.
 This tests a crop-trained model on a new input distribution, not a retrained
 letterbox model. Use a separate database and the preserved scene manifest.
+
+## Sunny63 comparison
+
+Use `--method single-max` to select the largest centered square. The [Sunny63 experiment](experiments/single_crop_max/README.md) documents the comparison and aggregate results.
